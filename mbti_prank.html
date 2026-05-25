@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>MBTI 人格透视测试</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+        body {
+            background: linear-gradient(145deg, #1a2a3a, #0a1220);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', system-ui;
+            padding: 20px;
+        }
+        .test-card {
+            background: rgba(20,30,45,0.85);
+            backdrop-filter: blur(8px);
+            border-radius: 48px;
+            padding: 32px 24px;
+            max-width: 600px;
+            width: 100%;
+            border: 1px solid rgba(30,136,229,0.5);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+        }
+        h1 { font-size: 1.9rem; text-align: center; color: #eef5ff; margin-bottom: 8px; }
+        .sub { text-align: center; color: #8aa2c0; font-size: 0.85rem; margin-bottom: 28px; }
+        .question { font-size: 1.4rem; font-weight: 600; margin-bottom: 24px; color: #ffecb3; border-left: 4px solid #1e88e5; padding-left: 16px; }
+        .options { display: flex; flex-direction: column; gap: 14px; margin-bottom: 30px; }
+        .opt-btn {
+            background: rgba(30,136,229,0.1);
+            border: 1px solid rgba(30,136,229,0.5);
+            padding: 14px 20px;
+            border-radius: 60px;
+            font-size: 1rem;
+            text-align: left;
+            color: #cde5ff;
+            cursor: pointer;
+            transition: 0.15s;
+        }
+        .opt-btn:hover { background: rgba(30,136,229,0.3); transform: scale(1.01); }
+        .progress { text-align: center; color: #6a85a5; font-size: 0.8rem; margin-top: 20px; }
+        .result-box { text-align: center; }
+        .result-type { font-size: 3rem; font-weight: 800; margin: 20px 0; background: linear-gradient(135deg, #ffd966, #ffaa33); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .result-desc { background: #0a1022; border-radius: 24px; padding: 20px; margin: 20px 0; border-left: 6px solid #ffaa33; font-size: 1rem; color: #fff5e0; line-height: 1.5; }
+        button { background: #1e88e5; border: none; padding: 12px 24px; border-radius: 40px; font-weight: bold; font-size: 1rem; color: white; cursor: pointer; margin-top: 16px; transition: 0.1s; }
+        button:active { transform: scale(0.96); }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+<div class="test-card" id="app">
+    <h1>🔮 人格透视测试</h1>
+    <div class="sub">基于MBTI模型 | 精准度99.9%</div>
+    <div id="questionArea">
+        <div class="question" id="questionText"></div>
+        <div class="options" id="optionsContainer"></div>
+        <div class="progress" id="progressText"></div>
+    </div>
+    <div id="resultArea" class="result-box hidden">
+        <div class="result-type" id="resultType"></div>
+        <div class="result-desc" id="resultDesc"></div>
+        <button id="restartBtn">🔄 重新测试</button>
+    </div>
+</div>
+<script>
+    // 扩展题目到12题（更像正经测试）
+    const questions = [
+        { text: "周末休息时，你更倾向于？", options: ["宅家刷剧打游戏", "约朋友出去玩", "一个人看书/学习", "运动健身"] },
+        { text: "收到不喜欢的礼物，你会？", options: ["直接说谢谢但心里嫌弃", "委婉表达不喜欢", "假装很喜欢", "当场退货"] },
+        { text: "你觉得自己最像哪种动物？", options: ["猫（独立）", "狗（忠诚）", "狐狸（聪明）", "树懒（佛系）"] },
+        { text: "遇到困难时，你通常？", options: ["自己硬扛", "找朋友帮忙", "上网查攻略", "直接放弃"] },
+        { text: "你最喜欢的颜色系是？", options: ["冷色系（蓝/紫）", "暖色系（红/橙）", "中性色（灰/白）", "五彩斑斓"] },
+        { text: "你对未知事物的态度是？", options: ["充满好奇", "有点恐惧", "事不关己", "必须搞明白"] },
+        { text: "旅行前你会做详细攻略吗？", options: ["必须做，精确到小时", "大概看看", "随缘，到那再说", "从不做攻略"] },
+        { text: "你更容易被哪种人吸引？", options: ["幽默风趣", "沉稳可靠", "聪明有才华", "温柔体贴"] },
+        { text: "你觉得自己的性格更像？", options: ["外向", "内向", "两者之间", "看情况"] },
+        { text: "你相信外星人存在吗？", options: ["绝对存在", "可能存在", "不太信", "关我屁事"] },
+        { text: "你最喜欢的电影类型是？", options: ["科幻", "喜剧", "悬疑", "爱情"] },
+        { text: "你的熬夜频率是？", options: ["每天都熬", "偶尔熬夜", "基本不熬", "想熬就熬"] }
+    ];
+    let currentIndex = 0;
+    let answers = [];
+    const questionText = document.getElementById('questionText');
+    const optionsContainer = document.getElementById('optionsContainer');
+    const progressText = document.getElementById('progressText');
+    const questionArea = document.getElementById('questionArea');
+    const resultArea = document.getElementById('resultArea');
+    const resultTypeSpan = document.getElementById('resultType');
+    const resultDescSpan = document.getElementById('resultDesc');
+
+    function renderQuestion() {
+        const q = questions[currentIndex];
+        questionText.innerText = q.text;
+        optionsContainer.innerHTML = '';
+        q.options.forEach((opt, idx) => {
+            const btn = document.createElement('div');
+            btn.className = 'opt-btn';
+            btn.innerText = `${String.fromCharCode(65+idx)}. ${opt}`;
+            btn.onclick = () => selectOption(idx);
+            optionsContainer.appendChild(btn);
+        });
+        progressText.innerText = `第 ${currentIndex+1} / ${questions.length} 题`;
+    }
+    function selectOption(optIndex) {
+        answers[currentIndex] = optIndex;
+        if (currentIndex + 1 < questions.length) {
+            currentIndex++;
+            renderQuestion();
+        } else {
+            showResult();
+        }
+    }
+    function showResult() {
+        questionArea.classList.add('hidden');
+        resultArea.classList.remove('hidden');
+        resultTypeSpan.innerHTML = "SB";
+        resultDescSpan.innerHTML = `
+            🎉 分析完成！ 🎉<br><br>
+            根据你严肃认真的选择，我们的超级量子AI鉴定：<br>
+            <strong style="font-size:1.4rem; color:#ffaa33;">你的真实人格类型是 —— SB</strong><br>
+            （Smart & Brave / 傻逼 你自己猜😂）<br><br>
+            建议：少做网络测试，多陪小刺猬玩抓飞碟游戏。<br>
+            <span style="color:#ffaa33;">👇 点击下方按钮，重新接受洗礼</span>
+        `;
+    }
+    function restart() {
+        currentIndex = 0;
+        answers = [];
+        questionArea.classList.remove('hidden');
+        resultArea.classList.add('hidden');
+        renderQuestion();
+    }
+    document.getElementById('restartBtn').addEventListener('click', restart);
+    renderQuestion();
+</script>
+</body>
+</html>

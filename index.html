@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <title>小刺猬的UFO档案 | 星际探索者</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Poppins', system-ui, -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif;
+            background: #050b14;
+            color: #eef5ff;
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+        }
+
+        #canvas-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            pointer-events: none;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(0deg, rgba(0,255,255,0.015) 0px, rgba(0,255,255,0.015) 2px, transparent 2px, transparent 8px);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .hero {
+            text-align: center;
+            padding: 40px 20px 30px;
+            backdrop-filter: blur(8px);
+            background: rgba(5, 11, 20, 0.6);
+            border-radius: 48px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(30, 136, 229, 0.3);
+        }
+        .hero h1 {
+            font-size: clamp(1.8rem, 6vw, 3rem);
+            font-weight: 800;
+            background: linear-gradient(135deg, #fff, #1e88e5);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 8px;
+        }
+        .hero .sub {
+            font-size: 0.95rem;
+            color: #8aa2c0;
+        }
+
+        /* 标签页 */
+        .tabs {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin: 30px 0 20px;
+            flex-wrap: wrap;
+        }
+        .tab-btn {
+            background: rgba(15, 25, 45, 0.7);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(30,136,229,0.4);
+            padding: 12px 28px;
+            border-radius: 60px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #ccdeff;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .tab-btn.active {
+            background: #1e88e5;
+            color: white;
+            border-color: #1e88e5;
+            box-shadow: 0 0 12px rgba(30,136,229,0.5);
+        }
+        .tab-btn:hover:not(.active) {
+            background: rgba(30,136,229,0.3);
+            transform: translateY(-2px);
+        }
+
+        /* 内容面板 */
+        .tab-pane {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        .tab-pane.active-pane {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 通用卡片样式 */
+        .section-title {
+            font-size: 1.8rem;
+            margin: 40px 0 20px 0;
+            border-left: 5px solid #1e88e5;
+            padding-left: 20px;
+        }
+        .ufo-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+        .ufo-card {
+            background: rgba(15, 25, 45, 0.7);
+            backdrop-filter: blur(12px);
+            border-radius: 32px;
+            border: 1px solid rgba(30,136,229,0.4);
+            padding: 24px;
+            transition: 0.2s;
+        }
+        .ufo-card h3 {
+            font-size: 1.7rem;
+            margin-bottom: 12px;
+            color: #90caf9;
+        }
+        .ufo-card .badge {
+            display: inline-block;
+            background: #1e88e5;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            margin-bottom: 16px;
+        }
+        .ufo-card .data-line {
+            font-size: 0.9rem;
+            color: #ffb74d;
+            margin: 8px 0;
+        }
+        .ufo-card .quote {
+            background: #0e1729;
+            padding: 12px 16px;
+            border-radius: 20px;
+            margin: 16px 0;
+            border-left: 4px solid #ffb74d;
+            color: #ffdfb3;
+        }
+        .grid-mini {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin: 16px 0;
+        }
+        .stat-badge {
+            background: #0a1022;
+            padding: 6px 12px;
+            border-radius: 40px;
+            font-size: 0.75rem;
+            color: #1e88e5;
+        }
+        hr {
+            border-color: #253449;
+            margin: 20px 0;
+        }
+
+        /* 其他板块卡片（小卡片） */
+        .other-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 24px;
+            margin: 20px 0;
+        }
+        .other-card {
+            background: rgba(15, 25, 45, 0.6);
+            backdrop-filter: blur(8px);
+            border-radius: 28px;
+            padding: 20px;
+            border: 1px solid rgba(30,136,229,0.3);
+            transition: 0.2s;
+        }
+        .other-card:hover {
+            transform: translateY(-4px);
+            border-color: #1e88e5;
+        }
+        .other-card h4 {
+            font-size: 1.3rem;
+            margin-bottom: 10px;
+        }
+        .other-card p {
+            font-size: 0.85rem;
+            color: #c0d4ff;
+            line-height: 1.5;
+        }
+
+        .game-intro {
+            text-align: center;
+            padding: 40px 20px;
+            background: rgba(0,0,0,0.4);
+            border-radius: 48px;
+            margin-top: 20px;
+        }
+        .game-intro a {
+            display: inline-block;
+            background: #1e88e5;
+            color: white;
+            padding: 12px 28px;
+            border-radius: 40px;
+            text-decoration: none;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+        footer {
+            text-align: center;
+            padding: 30px 20px 20px;
+            font-size: 0.7rem;
+            color: #5f7f9e;
+            border-top: 1px solid #1e2a3e;
+            margin-top: 50px;
+        }
+
+        @media (max-width: 700px) {
+            .tabs { gap: 10px; }
+            .tab-btn { padding: 8px 18px; font-size: 0.9rem; }
+            .ufo-card h3 { font-size: 1.4rem; }
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="canvas-bg"></canvas>
+
+<div class="container">
+    <div class="hero">
+        <h1>🐳 小刺猬的 UFO 档案</h1>
+        <div class="sub">同步美国解密 · 深度解读</div>
+    </div>
+
+    <div class="tabs">
+        <div class="tab-btn active" data-tab="ufo">🛸 UFO档案</div>
+        <div class="tab-btn" data-tab="other">📌 其他</div>
+        <div class="tab-btn" data-tab="game">🎮 小游戏</div>
+    </div>
+
+    <!-- UFO档案面板 -->
+    <div id="ufoPane" class="tab-pane active-pane">
+        <div class="ufo-grid">
+            <!-- 第一批档案 -->
+            <div class="ufo-card">
+                <div class="badge">📅 2026年5月9日 · 第一批解密</div>
+                <h3>📁 第一批UFO档案</h3>
+                <div class="data-line">🎬 28个视频 (1.33GB) | 📄 130项PDF (含阿波罗高清照片)</div>
+                <div class="quote">“公开了总比遮遮掩掩强得多” —— 你在5月15日就提出了这个核心观点，后来被称为“温水煮青蛙”策略。</div>
+                <p><strong>阿波罗任务高清照片：</strong> 4400×4600像素分辨率，月球表面坑洼清晰可见。宇航员目击“空心圆柱”、“规律双闪”、“锯齿状碎片像国庆日烟火”。</p>
+                <p><strong>成都对比：</strong> 你亲自对比2023年6月10日成都青白江区目击，发现形态一致（垂直物体）。美国研究50多年仍“无法解释”。</p>
+                <div class="grid-mini">
+                    <span class="stat-badge">📸 2000万像素</span>
+                    <span class="stat-badge">🛸 宇航员亲述</span>
+                    <span class="stat-badge">🌍 跨时空对比</span>
+                </div>
+            </div>
+
+            <!-- 第二批：休伦湖击落事件 -->
+            <div class="ufo-card">
+                <div class="badge">💥 2023年2月12日 · 美军主动开火</div>
+                <h3>🚀 休伦湖击落 UFO</h3>
+                <div class="data-line">📍 美加边界休伦湖 | 🎯 F-16 响尾蛇导弹 | 🔥 2万英尺高空击碎</div>
+                <div class="quote">“我不知道那是什么……我得叫它个气球。” —— 飞行员录音中坦言，物体下方有线条延伸，官方却一直称“高空气球”。</div>
+                <p><strong>形态：</strong> 蝌蚪型——圆形主体，下挂绳子状结构（你描述的“水母/蝌蚪”）。红外视频清晰记录“放射状破碎”，碎片四溅。</p>
+                <p><strong>残骸：</strong> 部分落入深湖，部分运往51区。事件发生后3年才在第二批文件中解密，是首次官方承认美军对UFO主动开火。</p>
+                <div class="grid-mini">
+                    <span class="stat-badge">🎬 46秒红外视频</span>
+                    <span class="stat-badge">🗄️ 57个第二批总视频</span>
+                    <span class="stat-badge">🏭 51区回收</span>
+                </div>
+            </div>
+
+            <!-- 更多UAP现象 -->
+            <div class="ufo-card">
+                <div class="badge">📡 卫星 & 海上 · 其他炸裂案例</div>
+                <h3>🌊 水母状物体 & 蝌蚪群</h3>
+                <div class="quote">“一段4分59秒视频，卫星视角，拍摄到的那个东西像是水母一样，上面是圆的球形，下边还像是挂着几根绳子似的。那东西移动速度很快，没有对照物，就是在水下。” —— 你的原话</div>
+                <p><strong>水母状UFO：</strong> 卫星视角，水下高速移动，形态诡异，无法解释其跨介质能力（从空中入水或水底活动）。</p>
+                <div class="quote">“我看到平台下的UFO不是一个两个，是他妈一堆，就跟那蝌蚪一样。不是说样子是蝌蚪，是数量跟蝌蚪差不多。” —— 石油平台下的集群UFO</div>
+                <p><strong>蝌蚪群：</strong> 石油平台下方聚集大量小型UFO，规模几十甚至上百。不是偶然路过，更像是驻扎或能量采集。</p>
+                <p><strong>其他案例：</strong> 伊朗上空4个UAP编队（2022年8月26日，红外传感器），B-52与圆盘并排（传闻，待验证），俄罗斯潜艇周围UAP等。</p>
+                <div class="grid-mini">
+                    <span class="stat-badge">🛰️ 卫星红外</span>
+                    <span class="stat-badge">🐟 蝌蚪群</span>
+                    <span class="stat-badge">🌊 跨介质</span>
+                </div>
+            </div>
+
+            <!-- 第二批整体总结 -->
+            <div class="ufo-card">
+                <div class="badge">📦 第二批文件总体</div>
+                <h3>📊 数据总览</h3>
+                <div class="data-line">🎬 57个视频 (5.64GB) | 📄 7个文档 (70MB) | ⏱️ 最长视频 17分36秒</div>
+                <p>多数视频4-5分钟，最长17分36秒（连续跟踪）。文件命名 `uap052226` 即2026年5月22日发布。你下载时发现视频走国内CDN（关VPN速度飙到57MB/s），文档必须翻墙。</p>
+                <p>第二批包含了休伦湖击落、水母状、蝌蚪群、伊朗编队等关键证据，标志着美国UAP披露从“被动观察”进入“主动交战”阶段。</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 其他面板 -->
+    <div id="otherPane" class="tab-pane">
+        <div class="other-grid">
+            <div class="other-card">
+                <h4>🕳️ 黑洞与宇宙哲学</h4>
+                <p>意大利面化 · 事件视界 · 嵌套宇宙假说。你小时候的想象：“黑洞可能是另一个宇宙的入口/出口”、“宇宙是一个巨人的身体，星球是细胞”。还做过“走不出去的漆黑隧道”的梦。</p>
+            </div>
+            <div class="other-card">
+                <h4>🎸 李志·封杀暗号</h4>
+                <p>百度百科只记录到2018年（断层），维基百科揭露封杀。网易云本地识别正版评论区“时间胶囊”复活。B站老狼演唱会视频里认出背景李志，评论区“方北路酒保”用《广场》开场白暗喻。</p>
+            </div>
+            <div class="other-card">
+                <h4>🌏 5月北京外交季</h4>
+                <p>特朗普5.13-15、普京5.19-20接连访华。中俄《睦邻友好合作条约》延期。中美200架波音订单。特朗普“不想飞9500英里打仗”，赖清德称“现状就是台独”。</p>
+            </div>
+            <div class="other-card">
+                <h4>🤖 DeepSeek vs 豆包</h4>
+                <p>DeepSeek API输出3元/百万Tokens，豆包拟收费68-500元/月但能力差（秒认错、瞎编）。你评价“豆包要是再收费，那就是真小丑了”。</p>
+            </div>
+            <div class="other-card">
+                <h4>🧠 00后探索者·你</h4>
+                <p>自学翻墙/root/刷机，游戏省82/亚洲前1000。下载130项PDF耐心2小时。小米17 Pro解锁刷机，电源键塌了继续扛。X账号自己申诉解封。</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 小游戏面板 -->
+    <div id="gamePane" class="tab-pane">
+        <div class="game-intro">
+            <h3>🎮 抓飞碟小游戏</h3>
+            <p>点击画布上随机出现的小飞碟，每点中一次得1分。测试你的反应速度！</p>
+            <a href="game.html" target="_blank">👉 立即开始游戏 👈</a>
+            <p style="margin-top: 20px; font-size: 0.8rem;">（新窗口打开，不会丢失本页面）</p>
+        </div>
+        <div class="other-grid" style="margin-top: 30px;">
+            <div class="other-card">
+                <h4>🕹️ 游戏开发背景</h4>
+                <p>你自己动手用HTML/CSS/JS写的，纯原生，无需安装。后续可以增加难度、计时器、排行榜。</p>
+            </div>
+            <div class="other-card">
+    <h4>🎁 小彩蛋</h4>
+    <p>
+        <a href="loading_fail.html" style="color:#1e88e5;">加载失败</a> &nbsp;|&nbsp;
+        <a href="mbti_prank.html" style="color:#1e88e5;">MBTI人格测试</a>
+    </p>
+</div>
+     <footer>
+        🌌 小刺猬的UFO档案 · 数据源自美国战争部解密 · 持续同步 · 部分图片为占位符，后续替换为真实截图
+    </footer>
+</div>
+
+<div id="lightbox" class="lightbox" onclick="closeLightbox()" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); justify-content:center; align-items:center; z-index:1000;">
+    <img id="lightboxImg" src="" style="max-width:90%; max-height:90%; border-radius:20px;">
+</div>
+
+<script>
+    // 标签切换逻辑
+    const tabs = document.querySelectorAll('.tab-btn');
+    const panes = {
+        ufo: document.getElementById('ufoPane'),
+        other: document.getElementById('otherPane'),
+        game: document.getElementById('gamePane')
+    };
+
+    function activateTab(tabId) {
+        Object.keys(panes).forEach(id => {
+            panes[id].classList.remove('active-pane');
+        });
+        panes[tabId].classList.add('active-pane');
+        tabs.forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.getAttribute('data-tab') === tabId) {
+                btn.classList.add('active');
+            }
+        });
+    }
+
+    tabs.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const tabId = btn.getAttribute('data-tab');
+            activateTab(tabId);
+        });
+    });
+
+    // 粒子背景 (优化)
+    const canvas = document.getElementById('canvas-bg');
+    const ctx = canvas.getContext('2d');
+    let width, height;
+    let particles = [];
+    let animationId;
+
+    function initCanvas() {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        canvas.width = width;
+        canvas.height = height;
+        const particleCount = Math.min(80, Math.floor(width * height / 10000));
+        particles = [];
+        for (let i = 0; i < particleCount; i++) {
+            particles.push({
+                x: Math.random() * width,
+                y: Math.random() * height,
+                radius: Math.random() * 2 + 1,
+                speedX: (Math.random() - 0.5) * 0.2,
+                speedY: (Math.random() - 0.5) * 0.15,
+                alpha: Math.random() * 0.4 + 0.1
+            });
+        }
+    }
+
+    function drawParticles() {
+        if (!ctx) return;
+        ctx.clearRect(0, 0, width, height);
+        ctx.fillStyle = '#050b14';
+        ctx.fillRect(0, 0, width, height);
+        for (let p of particles) {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(30, 136, 229, ${p.alpha})`;
+            ctx.fill();
+            p.x += p.speedX;
+            p.y += p.speedY;
+            if (p.x < 0) p.x = width;
+            if (p.x > width) p.x = 0;
+            if (p.y < 0) p.y = height;
+            if (p.y > height) p.y = 0;
+        }
+        animationId = requestAnimationFrame(drawParticles);
+    }
+
+    window.addEventListener('resize', () => {
+        initCanvas();
+    });
+    initCanvas();
+    drawParticles();
+
+    // 简单的灯箱（如果需要图片点击）
+    function openLightbox(url) {
+        const lb = document.getElementById('lightbox');
+        const img = document.getElementById('lightboxImg');
+        img.src = url;
+        lb.style.display = 'flex';
+    }
+    function closeLightbox() {
+        document.getElementById('lightbox').style.display = 'none';
+    }
+    // 暴露到全局供图片调用（如果有）
+    window.openLightbox = openLightbox;
+    window.closeLightbox = closeLightbox;
+</script>
+</body>
+</html>
